@@ -100,6 +100,7 @@ def index_kb(
         text = str(r["text"]).strip()
 
         meta = {
+            "id": rid,
             "domain": str(r["domain"]).strip(),
             "subcategory": str(r["subcategory"]).strip(),
             "doc_type": str(r["doc_type"]).strip(),

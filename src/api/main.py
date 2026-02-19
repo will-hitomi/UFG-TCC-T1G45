@@ -35,6 +35,8 @@ PROMPT = ChatPromptTemplate.from_messages([
      "EXEMPLOS RECUPERADOS:\n{context}\n\n"
      "Use os EXEMPLOS recuperados como referência de estrutura e estilo.\n"
      "Entregue apenas o texto da seção, sem título extra."
+     "Não adicione etapas, avisos ou características que não estejam no input_item ou nos documentos recuperados. "
+     "Se faltar informação, escreva 'não informado' (sem inventar)."
     )
 ])
 
@@ -163,7 +165,7 @@ def generate(req: GenerateRequest):
                 top_k=req.top_k,
                 filters=None,
             )
-            retrieved = [{"score": r["score"], "metadata": r.get("metadata") or {}} for r in results]
+            retrieved = [{"id": r["metadata"].get("id"), "score": r["score"]} for r in results]
 
             docs = [
                 Document(
