@@ -1,6 +1,6 @@
 import os
 import json
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 from typing import Any, Dict, Literal, Optional
 
@@ -125,9 +125,13 @@ def retrieve(req: RetrieveRequest):
 
 
 @app.post("/index")
-def index(req: IndexRequest):
+def index(req: IndexRequest, request: Request):
     chroma_path = os.getenv("CHROMA_PATH", "./chroma_db")
     embedding_model = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+
+    client_ip = request.client.host
+    if client_ip not in ("127.0.0.1", "::1"):
+        raise HTTPException(status_code=403, detail="forbidden")
 
     try:
         n = index_kb(
@@ -143,6 +147,10 @@ def index(req: IndexRequest):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"runtime_error: {e}")
+    
+@app.post("/admin/index")
+def admin_index(req: IndexRequest):
+    return index(req)   # reaproveita a mesma função do /index, mas sem expor o endpoint publicamente
 
 @app.post("/generate")
 def generate(req: GenerateRequest):

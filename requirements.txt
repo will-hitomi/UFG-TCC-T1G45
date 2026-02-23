@@ -9,3 +9,7 @@ langchain-core
 langchain-openai
 python-dotenv
 
+requests==2.32.5
+requests-oauthlib==2.0.0
+requests-toolbelt==1.0.0
+streamlit==1.54.0
