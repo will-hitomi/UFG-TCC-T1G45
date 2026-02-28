@@ -52,6 +52,22 @@ curl --fail-with-body -sS -X POST "${BASE_URL}/index" \
   -d '{"kb_path":"data/knowledge_base.jsonl","rebuild":true}'
 echo
 
+RETRIEVE_FALLBACK_PAYLOAD='{
+  "query":"modo de uso desengordurante",
+  "domain":"limpeza",
+  "subcategory":"nao_existe_subcat",
+  "doc_type":"TECNICO",
+  "section":"Modo de uso (objetivo e conciso)",
+  "top_k":3,
+  "filters":{"source":["autores"]}
+}'
+
+echo "[smoke] POST /retrieve (fallback prova: subcategory invalida)"
+curl --fail-with-body -sS -X POST "${BASE_URL}/retrieve" \
+  -H "Content-Type: application/json" \
+  -d "${RETRIEVE_FALLBACK_PAYLOAD}"
+echo
+
 BASELINE_PAYLOAD='{
   "mode":"baseline",
   "domain":"limpeza",

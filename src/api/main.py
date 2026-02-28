@@ -1,11 +1,12 @@
 import os
 import json
+
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 from typing import Any, Dict, Literal, Optional
 
 from src.rag.index_kb import index_kb
-from src.rag.retrieve import retrieve_by_section
+from src.rag.retrieve import retrieve_with_fallback
 
 from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
@@ -108,7 +109,7 @@ def health():
 @app.post("/retrieve")
 def retrieve(req: RetrieveRequest):
     try:
-        results = retrieve_by_section(
+        results, debug = retrieve_with_fallback(
             query=req.query,
             domain=req.domain,
             subcategory=req.subcategory,
@@ -117,7 +118,7 @@ def retrieve(req: RetrieveRequest):
             top_k=req.top_k,
             filters=req.filters,
         )
-        return {"results": results}
+        return {"results": results, "debug": debug}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -164,7 +165,7 @@ def generate(req: GenerateRequest):
 
         if req.mode == "rag":
             query = build_retrieve_query(req.input_item, req.section)
-            results = retrieve_by_section(
+            results, _ = retrieve_with_fallback(
                 query=query,
                 domain=req.domain,
                 subcategory=req.subcategory,
