@@ -149,8 +149,8 @@ def index(req: IndexRequest, request: Request):
         raise HTTPException(status_code=500, detail=f"runtime_error: {e}")
     
 @app.post("/admin/index")
-def admin_index(req: IndexRequest):
-    return index(req)   # reaproveita a mesma função do /index, mas sem expor o endpoint publicamente
+def admin_index(req: IndexRequest, request: Request):
+    return index(req, request)
 
 @app.post("/generate")
 def generate(req: GenerateRequest):

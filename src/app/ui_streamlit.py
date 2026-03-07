@@ -1,4 +1,10 @@
-import os, json, requests
+import json
+import os
+import re
+from datetime import datetime, timezone
+from pathlib import Path
+
+import requests
 import streamlit as st
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
@@ -50,6 +56,50 @@ def api_get(path: str):
 def api_post(path: str, payload: dict):
     return requests.post(f"{API_BASE_URL}{path}", json=payload, timeout=60)
 
+
+def generate_baseline(payload: dict):
+    req = dict(payload)
+    req["mode"] = "baseline"
+    return api_post("/generate", req)
+
+
+def generate_rag(payload: dict):
+    req = dict(payload)
+    req["mode"] = "rag"
+    return api_post("/generate", req)
+
+
+def slugify(value: str) -> str:
+    cleaned = re.sub(r"[^a-zA-Z0-9_-]+", "_", value.strip())
+    return cleaned.strip("_") or "output"
+
+
+def save_outputs(payload: dict, response_data: dict) -> tuple[Path, Path]:
+    out_dir = Path("data/outputs")
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    item_id = response_data.get("item_id") or payload.get("input_item", {}).get("item_id", "item")
+    doc_type = response_data.get("doc_type", payload.get("doc_type", "DOC"))
+    section = response_data.get("sections", [{}])[0].get("name", payload.get("section", "secao"))
+    text = response_data.get("sections", [{}])[0].get("text", "")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    stem = f"{timestamp}_{slugify(str(item_id))}_{slugify(str(doc_type))}_{slugify(str(section))}"
+
+    md_path = out_dir / f"{stem}.md"
+    json_path = out_dir / f"{stem}.json"
+
+    md_content = (
+        f"# {section}\n\n"
+        f"- item_id: {item_id}\n"
+        f"- doc_type: {doc_type}\n"
+        f"- language: {response_data.get('language', 'pt-BR')}\n\n"
+        f"{text}\n"
+    )
+    md_path.write_text(md_content, encoding="utf-8")
+    json_path.write_text(json.dumps(response_data, ensure_ascii=False, indent=2), encoding="utf-8")
+    return md_path, json_path
+
+
 st.set_page_config(page_title="TCPOPAI", layout="wide")
 st.title("TCPOPAI — UI mínima (geração por seção)")
 
@@ -78,7 +128,12 @@ with col2:
 
     st.subheader("Ação")
     if st.button("Gerar seção"):
-        item = json.loads(input_item_text)
+        try:
+            item = json.loads(input_item_text)
+        except json.JSONDecodeError as e:
+            st.error(f"JSON inválido no InputItem: {e}")
+            st.stop()
+
         payload = {
             "mode": mode,
             "domain": item.get("domain"),
@@ -88,6 +143,38 @@ with col2:
             "input_item": item,
             "top_k": top_k
         }
-        r = api_post("/generate", payload)
-        st.write("Status:", r.status_code)
-        st.code(r.text)
+        response = generate_baseline(payload) if mode == "baseline" else generate_rag(payload)
+        st.write("Status:", response.status_code)
+
+        if response.status_code != 200:
+            st.error("Falha ao gerar seção. Verifique os detalhes retornados pela API.")
+            st.code(response.text)
+            st.stop()
+
+        try:
+            data = response.json()
+        except ValueError:
+            st.error("Resposta da API não está em JSON válido.")
+            st.code(response.text)
+            st.stop()
+
+        generated_text = data.get("sections", [{}])[0].get("text", "")
+        st.subheader("Texto gerado")
+        st.write(generated_text if generated_text else "(vazio)")
+
+        debug = data.get("debug") or {}
+        if debug.get("retrieved"):
+            st.subheader("debug.retrieved")
+            st.json(debug.get("retrieved"))
+
+        st.session_state["last_generate_payload"] = payload
+        st.session_state["last_generate_response"] = data
+
+    if st.button("Salvar em data/outputs/"):
+        payload = st.session_state.get("last_generate_payload")
+        response_data = st.session_state.get("last_generate_response")
+        if not payload or not response_data:
+            st.warning("Gere uma seção primeiro para salvar o resultado.")
+        else:
+            md_path, json_path = save_outputs(payload, response_data)
+            st.success(f"Arquivos salvos: {md_path} e {json_path}")

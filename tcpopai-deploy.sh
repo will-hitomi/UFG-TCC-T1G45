@@ -19,10 +19,24 @@ DO_REINDEX=0
 KB_PATH="data/knowledge_base.jsonl"
 REBUILD=true
 SERVICES=("tcpopai-api" "tcpopai-ui")
+API_URL="http://127.0.0.1:8000"
+HEALTH_TIMEOUT_SEC=45
 
 usage() {
   echo "Uso: $0 [--reindex] [--kb-path PATH] [--no-pull] [--branch BRANCH]"
   exit 1
+}
+
+wait_for_api_health() {
+  local waited=0
+  while (( waited < HEALTH_TIMEOUT_SEC )); do
+    if curl -fsS "$API_URL/health" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  return 1
 }
 
 while [[ $# -gt 0 ]]; do
@@ -90,13 +104,25 @@ for svc in "${SERVICES[@]}"; do
   sudo systemctl --no-pager --full status "$svc" | sed -n '1,12p' || true
 done
 
+echo "[deploy] Aguardando API ficar pronta em $API_URL/health ..."
+if ! wait_for_api_health; then
+  echo "[deploy] ERRO: API não ficou pronta em ${HEALTH_TIMEOUT_SEC}s."
+  sudo journalctl -u tcpopai-api -n 80 --no-pager || true
+  exit 1
+fi
+echo "[deploy] API pronta."
+
 # Reindex opcional
 if [[ $DO_REINDEX -eq 1 ]]; then
   echo "[deploy] Reindex acionado: $KB_PATH (rebuild=$REBUILD)"
-  curl -sS -X POST "http://127.0.0.1:8000/admin/index" \
+  if ! curl -fsS -X POST "$API_URL/admin/index" \
     -H "Content-Type: application/json" \
     -d "{\"kb_path\":\"$KB_PATH\",\"rebuild\":$REBUILD}" \
-    | sed 's/^/[deploy] /'
+    | sed 's/^/[deploy] /'; then
+    echo "[deploy] ERRO: reindex falhou."
+    sudo journalctl -u tcpopai-api -n 80 --no-pager || true
+    exit 1
+  fi
 else
   echo "[deploy] Reindex não solicitado. (use --reindex)"
 fi
