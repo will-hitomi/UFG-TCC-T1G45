@@ -22,20 +22,20 @@ SECTIONS = {
         "Critérios de sucesso",
     ],
     "TECNICO": [
-        "Descrição (o que é)",
-        "Aplicações/Indicações",
-        "Especificações/Características",
+        "Descricao (o que e)",
+        "Aplicacoes/Indicacoes",
+        "Especificacoes/Caracteristicas",
         "Modo de uso (objetivo e conciso)",
-        "Restrições/Compatibilidade",
-        "Segurança/Avisos essenciais",
+        "Restricoes/Compatibilidade",
+        "Seguranca/Avisos essenciais",
     ],
     "COMERCIAL": [
-        "Headline (benefício principal)",
-        "Benefícios (bullets)",
+        "Headline (beneficio principal)",
+        "Beneficios (bullets)",
         "Detalhes essenciais",
         "Como usar / Como funciona (resumo)",
         "Avisos essenciais",
-        "CTA (chamada para ação)",
+        "CTA (chamada para acao)",
     ],
 }
 
@@ -45,18 +45,18 @@ CASE0_LIMPEZA = {
     "subcategory": "desengordurante",
     "risk_level": "medio",
     "nome": "Desengordurante multiuso",
-    "descricao_curta": "Removedor de gordura para cozinhas e superfícies laváveis.",
-    "publico_alvo": "pequenos negócios e uso doméstico",
+    "descricao_curta": "Removedor de gordura para cozinhas e superficies lavaveis.",
+    "publico_alvo": "pequenos negocios e uso domestico",
     "canal_venda": "marketplace",
-    "atributos_comuns": [{"k": "volume", "v": "500 mL"}, {"k": "forma", "v": "líquido em borrifador"}],
+    "atributos_comuns": [{"k": "volume", "v": "500 mL"}, {"k": "forma", "v": "liquido em borrifador"}],
     "atributos_limpeza": {
-        "superficie_alvo": "azulejo, inox e superfícies laváveis",
+        "superficie_alvo": "azulejo, inox e superficies lavaveis",
         "diluicao": "pronto uso",
         "tempo_acao": "1 a 3 minutos",
-        "compatibilidades": "inoxidável, azulejo, plástico rígido",
-        "incompatibilidades": "madeira não selada e superfícies sensíveis",
+        "compatibilidades": "inoxidavel, azulejo, plastico rigido",
+        "incompatibilidades": "madeira nao selada e superficies sensiveis",
         "epi": "luvas; evitar contato com olhos",
-        "observacoes": "não informado",
+        "observacoes": "nao informado",
     },
     "atributos_servico": {
         "escopo": "",
@@ -124,14 +124,14 @@ def extract_section_text(result: Dict[str, Any]) -> str:
 
 
 def render_markdown(doc_type: str, item_name: str, results_by_section: Dict[str, Dict[str, Any]]) -> str:
-    lines: List[str] = [f"# {doc_type} — {item_name}", ""]
+    lines: List[str] = [f"# {doc_type} - {item_name}", ""]
     for section_name, section_result in results_by_section.items():
         lines.append(f"## {section_name}")
         text = extract_section_text(section_result)
         if text:
             lines.append(text)
         else:
-            err = section_result.get("error") or "Erro ao gerar seção."
+            err = section_result.get("error") or "Erro ao gerar secao."
             lines.append(f"_Erro: {err}_")
         lines.append("")
     return "\n".join(lines)
@@ -173,7 +173,14 @@ def build_input_item_from_form(form_vals: Dict[str, Any]) -> Dict[str, Any]:
     return base
 
 
-def export_outputs(doc_type: str, input_item: Dict[str, Any], baseline_results: Dict[str, Any], rag_results: Dict[str, Any], baseline_md: str, rag_md: str) -> Path:
+def export_outputs(
+    doc_type: str,
+    input_item: Dict[str, Any],
+    baseline_results: Dict[str, Any],
+    rag_results: Dict[str, Any],
+    baseline_md: str,
+    rag_md: str,
+) -> Path:
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     out_dir = Path("data/outputs") / ts
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -201,9 +208,9 @@ def export_outputs(doc_type: str, input_item: Dict[str, Any], baseline_results: 
 
 
 st.set_page_config(page_title="TCPOPAI", layout="wide")
-st.title("TCPOPAI — Comparação Baseline x RAG (múltiplas seções)")
+st.title("TCPOPAI - Comparacao Baseline x RAG (multiplas secoes)")
 
-st.subheader("Conexão")
+st.subheader("Conexao")
 st.write("API_BASE_URL:", API_BASE_URL)
 if st.button("Testar /health"):
     try:
@@ -211,12 +218,12 @@ if st.button("Testar /health"):
         st.write("Status:", r.status_code)
         st.code(r.text)
     except requests.RequestException as e:
-        st.error(f"Falha de conexão com API: {e}")
+        st.error(f"Falha de conexao com API: {e}")
 
-st.subheader("Configuração")
+st.subheader("Configuracao")
 doc_type = st.selectbox("Doc type", ["POP", "TECNICO", "COMERCIAL"], index=1)
 default_section = "Modo de uso (objetivo e conciso)" if doc_type == "TECNICO" else SECTIONS[doc_type][0]
-sections_selected = st.multiselect("Seções", SECTIONS[doc_type], default=[default_section])
+sections_selected = st.multiselect("Secoes", SECTIONS[doc_type], default=[default_section])
 top_k = st.slider("top_k", 1, 10, 3)
 
 st.subheader("InputItem")
@@ -226,7 +233,7 @@ if st.button("Carregar Caso 0 (Limpeza)"):
 
 item_from_state = st.session_state.get("input_item", deepcopy(CASE0_LIMPEZA))
 
-with st.expander("Modo padrão (formulário guiado)", expanded=True):
+with st.expander("Modo padrao (formulario guiado)", expanded=True):
     domain = st.selectbox("domain", ["limpeza", "servicos_operacionais"], index=0 if item_from_state.get("domain") == "limpeza" else 1)
     subcategory = st.text_input("subcategory", value=item_from_state.get("subcategory", ""))
     item_id = st.text_input("item_id", value=item_from_state.get("item_id", ""))
@@ -252,7 +259,7 @@ with st.expander("Modo padrão (formulário guiado)", expanded=True):
         prazo_sla = canal_atendimento = sistemas_ferramentas = politica_privacidade = ""
         observacoes_servico = ""
     else:
-        st.markdown("**Campos de serviços**")
+        st.markdown("**Campos de servicos**")
         escopo = st.text_input("escopo", value=atributos_servico.get("escopo", ""))
         o_que_inclui = st.text_input("o_que_inclui", value=atributos_servico.get("o_que_inclui", ""))
         o_que_nao_inclui = st.text_input("o_que_nao_inclui", value=atributos_servico.get("o_que_nao_inclui", ""))
@@ -295,20 +302,20 @@ with st.expander("Modo padrão (formulário guiado)", expanded=True):
         built = build_input_item_from_form(form_vals)
         st.session_state["input_item"] = built
         st.session_state["input_item_text"] = json.dumps(built, ensure_ascii=False, indent=2)
-        st.success("JSON atualizado com base no formulário.")
+        st.success("JSON atualizado com base no formulario.")
 
-st.markdown("**Modo avançado (JSON)**")
+st.markdown("**Modo avancado (JSON)**")
 st.text_area("InputItem JSON", key="input_item_text", height=320)
 
-if st.button("Gerar seções selecionadas"):
+if st.button("Gerar secoes selecionadas"):
     if not sections_selected:
-        st.error("Selecione ao menos uma seção.")
+        st.error("Selecione ao menos uma secao.")
         st.stop()
 
     try:
         input_item = json.loads(st.session_state["input_item_text"])
     except json.JSONDecodeError as e:
-        st.error(f"JSON inválido no InputItem: {e}")
+        st.error(f"JSON invalido no InputItem: {e}")
         st.stop()
 
     base_payload = {
@@ -323,10 +330,10 @@ if st.button("Gerar seções selecionadas"):
     rag_results: Dict[str, Dict[str, Any]] = {}
     progress = st.progress(0)
 
-    with st.status("Gerando seções...", expanded=True) as status:
+    with st.status("Gerando secoes...", expanded=True) as status:
         total = len(sections_selected)
         for i, section in enumerate(sections_selected, start=1):
-            status.update(label=f"Gerando seção {i}/{total}: {section}", state="running")
+            status.update(label=f"Gerando secao {i}/{total}: {section}", state="running")
             payload = dict(base_payload)
             payload["section"] = section
 
@@ -340,7 +347,7 @@ if st.button("Gerar seções selecionadas"):
 
             progress.progress(i / total)
 
-        status.update(label="Geração concluída.", state="complete")
+        status.update(label="Geracao concluida.", state="complete")
 
     success_baseline = sum(1 for r in baseline_results.values() if r.get("ok"))
     success_rag = sum(1 for r in rag_results.values() if r.get("ok"))
@@ -364,34 +371,34 @@ if "generated" in st.session_state:
     gen = st.session_state["generated"]
     st.subheader("Resumo")
     st.write(
-        f"Seções com sucesso - Baseline: {gen['success_baseline']}/{len(gen['sections_selected'])} | "
+        f"Secoes com sucesso - Baseline: {gen['success_baseline']}/{len(gen['sections_selected'])} | "
         f"RAG: {gen['success_rag']}/{len(gen['sections_selected'])}"
     )
 
-    st.subheader("Comparação por seção")
+    st.subheader("Comparacao por secao")
     left_col, right_col = st.columns(2)
 
     for section in gen["sections_selected"]:
-        b = gen["baseline_results"].get(section, {})
-        r = gen["rag_results"].get(section, {})
+        baseline_result = gen["baseline_results"].get(section, {})
+        rag_result = gen["rag_results"].get(section, {})
 
         with left_col:
-            st.markdown(f"### Baseline — {section}")
-            if b.get("ok"):
-                st.write(extract_section_text(b))
+            st.markdown(f"### Baseline - {section}")
+            if baseline_result.get("ok"):
+                st.write(extract_section_text(baseline_result))
             else:
-                st.error(f"Erro ({b.get('status')}): {b.get('error')}")
+                st.error(f"Erro ({baseline_result.get('status')}): {baseline_result.get('error')}")
 
         with right_col:
-            st.markdown(f"### RAG — {section}")
-            if r.get("ok"):
-                st.write(extract_section_text(r))
-                retrieved = ((r.get("raw") or {}).get("debug") or {}).get("retrieved")
+            st.markdown(f"### RAG - {section}")
+            if rag_result.get("ok"):
+                st.write(extract_section_text(rag_result))
+                retrieved = ((rag_result.get("raw") or {}).get("debug") or {}).get("retrieved")
                 if retrieved:
                     st.caption("debug.retrieved")
                     st.json(retrieved)
             else:
-                st.error(f"Erro ({r.get('status')}): {r.get('error')}")
+                st.error(f"Erro ({rag_result.get('status')}): {rag_result.get('error')}")
 
     st.subheader("Markdown final (sem LLM extra)")
     md_left, md_right = st.columns(2)
@@ -411,4 +418,4 @@ if "generated" in st.session_state:
             baseline_md=gen["baseline_md"],
             rag_md=gen["rag_md"],
         )
-        st.success(f"Export concluído em: {out_dir}")
+        st.success(f"Export concluido em: {out_dir}")
