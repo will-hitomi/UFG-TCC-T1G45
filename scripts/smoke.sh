@@ -52,31 +52,40 @@ curl --fail-with-body -sS -X POST "${BASE_URL}/index" \
   -d '{"kb_path":"data/knowledge_base.jsonl","rebuild":true}'
 echo
 
+RETRIEVE_PAYLOAD='{
+  "query":"Detalhes essenciais. Desengordurante multiuso. Removedor de gordura para cozinhas e superficies lavaveis. pequenos negocios e uso domestico. azulejo, inox e superficies lavaveis. pronto uso. 1 a 3 minutos.",
+  "domain":"limpeza",
+  "subcategory":"desengordurante",
+  "doc_type":"COMERCIAL",
+  "section":"Detalhes essenciais",
+  "top_k":3
+}'
+
 BASELINE_PAYLOAD='{
   "mode":"baseline",
   "domain":"limpeza",
   "subcategory":"desengordurante",
-  "doc_type":"TECNICO",
-  "section":"Modo de uso (objetivo e conciso)",
+  "doc_type":"COMERCIAL",
+  "section":"Detalhes essenciais",
   "top_k":3,
   "input_item":{
-    "item_id":"case_0_deseng_001",
+    "item_id":"LIMPEZA_001",
     "domain":"limpeza",
     "subcategory":"desengordurante",
     "risk_level":"medio",
-    "nome":"Desengordurante Multiuso X",
-    "descricao_curta":"Produto para remoção de gordura em superfícies laváveis",
-    "publico_alvo":"cozinhas residenciais e pequenas lanchonetes",
+    "nome":"Desengordurante multiuso",
+    "descricao_curta":"Removedor de gordura para cozinhas e superficies lavaveis.",
+    "publico_alvo":"pequenos negocios e uso domestico",
     "canal_venda":"marketplace",
-    "atributos_comuns":[{"k":"fragrancia","v":"neutra"}],
+    "atributos_comuns":[{"k":"volume","v":"500 mL"},{"k":"forma","v":"liquido em borrifador"}],
     "atributos_limpeza":{
-      "superficie_alvo":"fogões, bancadas e azulejos",
+      "superficie_alvo":"azulejo, inox e superficies lavaveis",
       "diluicao":"pronto uso",
-      "tempo_acao":"2 minutos",
-      "compatibilidades":"superfícies laváveis",
-      "incompatibilidades":"madeira não selada",
-      "epi":"luvas",
-      "observacoes":"testar em área pequena antes do uso contínuo"
+      "tempo_acao":"1 a 3 minutos",
+      "compatibilidades":"inoxidavel, azulejo, plastico rigido",
+      "incompatibilidades":"madeira nao selada e superficies sensiveis",
+      "epi":"luvas; evitar contato com olhos",
+      "observacoes":"nao informado"
     },
     "atributos_servico":{}
   }
@@ -86,31 +95,37 @@ RAG_PAYLOAD='{
   "mode":"rag",
   "domain":"limpeza",
   "subcategory":"desengordurante",
-  "doc_type":"TECNICO",
-  "section":"Modo de uso (objetivo e conciso)",
+  "doc_type":"COMERCIAL",
+  "section":"Detalhes essenciais",
   "top_k":3,
   "input_item":{
-    "item_id":"case_0_deseng_001",
+    "item_id":"LIMPEZA_001",
     "domain":"limpeza",
     "subcategory":"desengordurante",
     "risk_level":"medio",
-    "nome":"Desengordurante Multiuso X",
-    "descricao_curta":"Produto para remoção de gordura em superfícies laváveis",
-    "publico_alvo":"cozinhas residenciais e pequenas lanchonetes",
+    "nome":"Desengordurante multiuso",
+    "descricao_curta":"Removedor de gordura para cozinhas e superficies lavaveis.",
+    "publico_alvo":"pequenos negocios e uso domestico",
     "canal_venda":"marketplace",
-    "atributos_comuns":[{"k":"fragrancia","v":"neutra"}],
+    "atributos_comuns":[{"k":"volume","v":"500 mL"},{"k":"forma","v":"liquido em borrifador"}],
     "atributos_limpeza":{
-      "superficie_alvo":"fogões, bancadas e azulejos",
+      "superficie_alvo":"azulejo, inox e superficies lavaveis",
       "diluicao":"pronto uso",
-      "tempo_acao":"2 minutos",
-      "compatibilidades":"superfícies laváveis",
-      "incompatibilidades":"madeira não selada",
-      "epi":"luvas",
-      "observacoes":"testar em área pequena antes do uso contínuo"
+      "tempo_acao":"1 a 3 minutos",
+      "compatibilidades":"inoxidavel, azulejo, plastico rigido",
+      "incompatibilidades":"madeira nao selada e superficies sensiveis",
+      "epi":"luvas; evitar contato com olhos",
+      "observacoes":"nao informado"
     },
     "atributos_servico":{}
   }
 }'
+
+echo "[smoke] POST /retrieve"
+curl --fail-with-body -sS -X POST "${BASE_URL}/retrieve" \
+  -H "Content-Type: application/json" \
+  -d "${RETRIEVE_PAYLOAD}"
+echo
 
 echo "[smoke] POST /generate (mode=baseline)"
 curl -sS -X POST "${BASE_URL}/generate" \
